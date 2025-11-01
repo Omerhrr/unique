@@ -7,19 +7,14 @@ import os
 from pathlib import Path 
 from dotenv import load_dotenv
 from fastapi.responses import HTMLResponse
-# Core application imports
-from core import get_validated_data
-from core import create_db_and_tables, get_session
-from core import User
-from pydantic import BaseModel
-from datetime import datetime, timedelta
-from core import MAX_SESSIONS 
 from typing import Optional
 from fastapi.staticfiles import StaticFiles
-from core import engine
-from core import Task
-from core import * 
-from admin import *
+from pydantic import BaseModel
+from datetime import datetime, timedelta
+# Core application imports
+
+from .core import * 
+from .admin import *
 
 BACKEND_DIR = Path(__file__).parent 
 # This will be the absolute path to your project's root folder
@@ -477,4 +472,5 @@ async def read_index():
     return FileResponse(FRONTEND_DIR / "index.html")
 
 app.mount("/", StaticFiles(directory=FRONTEND_DIR), name="static")
+
 
