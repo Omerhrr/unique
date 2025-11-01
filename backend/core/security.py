@@ -37,12 +37,13 @@ def get_validated_data(
     try:
 
         validated_object: InitialData = authenticator.get_initial_data(telegram_data)
-
-
+    
+        user_dict = validated_object.user.model_dump()
+    
+    
         if hasattr(validated_object, 'start_param') and validated_object.start_param:
-
             user_dict['referral_code_used'] = validated_object.start_param
-
+    
         return {"user": user_dict}
 
     except ValueError as e:
