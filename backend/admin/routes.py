@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 
-from core import * 
+from ..core import * 
 
 
 # --- Configuration ---
@@ -128,3 +128,4 @@ async def delete_task(
     session.commit()
     
     return RedirectResponse(url="/admin/dashboard", status_code=303)
+
