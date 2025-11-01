@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Airdrop Bot</title>
+    
+    <!-- Scripts -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0d0d0d; /* Darker background */
+            background-image: url('https://www.transparenttextures.com/patterns/stardust.png' ); /* Starry background texture */
+            color: #ffffff;
+            overscroll-behavior: none;
+        }
+        .primary-gradient {
+            background: linear-gradient(90deg, #f59e0b, #ef4444); /* Yellow to Red gradient */
+        }
+        .secondary-gradient-border {
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            border-image: linear-gradient(90deg, #f59e0b, #ef4444) 1;
+        }
+        .falling-ball {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-size: cover;
+            border-radius: 50%;
+            cursor: pointer;
+            user-select: none;
+        }
+        /* Style for the main coin icon */
+        .main-coin-shadow {
+            filter: drop-shadow(0 0 15px rgba(252, 211, 77, 0.6));
+        }
+        /* Style for the score text */
+        .score-text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .score-text img {
+            width: 2.5rem; 
+            height: 2.5rem;
+        }
+    </style>
+
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+
+
+<main id="app-lobby" class="flex-grow flex-col items-center p-4 text-center hidden">
+    <div class="w-full max-w-md flex flex-col h-full">
+
+        <!-- Top Welcome Message -->
+        <div class="flex items-center space-x-3 self-start mb-4">
+            <img src="logo.jpg" class="w-12 h-12 rounded-full secondary-gradient-border p-0.5" alt="Avatar">
+            <div>
+                <p class="font-semibold text-left">Welcome mate</p>
+                <p class="text-xs text-gray-400 text-left">UniqueCoin are ready to be claimed 🔥</p>
+            </div>
+        </div>
+
+        <!-- Connect Wallet Banner -->
+        <div id="wallet-connect-banner" class="bg-gray-900 p-3 rounded-xl flex justify-between items-center my-4 secondary-gradient-border">
+            <div>
+                <p class="font-bold">Connect Your Wallet</p>
+                <p class="text-xs text-gray-400">Secure your earnings and start withdrawing</p>
+            </div>
+            <button id="connect-wallet-button" class="primary-gradient text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                <span>Connect</span>
+            </button>
+        </div>
+
+        <!-- Main User Profile & Score Area -->
+        <div class="flex-grow flex flex-col items-center justify-center">
+            <img src="logo.jpg" class="w-32 h-32 rounded-full main-coin-shadow mb-2" alt="Main Coin">
+            <p id="username-display" class="text-xl font-bold">beazea</p>
+            <div id="score-display" class="text-5xl font-bold score-text my-2">
+                <img src="logo.jpg" alt="coin">
+                <span>0</span>
+            </div>
+        </div>
+
+        <!-- Drop Game & Farming Buttons -->
+        <div class="space-y-3 w-full">
+            <!-- Drop Game -->
+            <div class="bg-gray-900 p-3 rounded-xl flex justify-between items-center secondary-gradient-border">
+                <div class="flex items-center space-x-3">
+                    <img src="logo.jpg" class="w-12 h-12 rounded-full" alt="Game Logo">
+                    <div>
+                        <p class="font-bold text-left">Drop game</p>
+                        <div class="text-gray-400 text-sm text-left flex items-center">
+                            <span class="text-red-500 font-semibold mr-1">HEALTH</span>
+                            <span id="health-display">0</span>
+                        </div>
+                    </div>
+                </div>
+                <button id="play-button" class="primary-gradient text-white font-bold py-3 px-8 rounded-lg">PLAY</button>
+            </div>
+            <!-- Start Farming -->
+            <button id="claim-rewards-button" class="w-full primary-gradient text-white font-bold py-4 rounded-xl flex justify-between items-center px-4 text-lg">
+                <span>Start Farming</span>
+                <span id="rewards-amount-display">Ready</span>
+            </button>
+        </div>
+    </div>
+</main>
+
+
+
+    <!-- ================== UI OVERLAYS ================== -->
+    <div id="loader" class="fixed inset-0 flex items-center justify-center z-50">
+        <p class="text-lg">Loading your profile...</p>
+    </div>
+
+    <div id="error-display" class="fixed inset-0 flex-col items-center justify-center z-50 hidden p-4 text-center">
+        <p class="font-bold text-red-500">Error</p>
+        <p id="error-message" class="text-red-400"></p>
+    </div>
+
+    <div id="game-overlay" class="hidden fixed inset-0 bg-black bg-opacity-90 z-40">
+        <div class="absolute top-0 left-0 right-0 p-4 flex justify-between items-center text-lg font-semibold h-[60px]">
+            <div>Timer: <span id="game-timer">60</span>s</div>
+            <div>Score: <span id="session-score-display">0</span></div>
+        </div>
+        <div id="tapping-area" class="absolute left-0 right-0 top-[60px] bottom-[90px] overflow-hidden"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-4 text-center h-[90px]">
+            <button id="close-game-button" class="bg-red-600 text-white font-bold py-3 px-10 rounded-xl">Close</button>
+        </div>
+    </div>
+
+    <div id="summary-popup" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl p-6 text-center w-full max-w-sm">
+            <h2 class="text-2xl font-bold mb-2">Session Over!</h2>
+            <p class="text-lg">You scored</p>
+            <p id="summary-score" class="text-4xl font-bold my-4 primary-gradient bg-clip-text text-transparent">0</p>
+            <button id="summary-close-button" class="bg-blue-600 text-white font-bold py-2 px-8 rounded-lg">OK</button>
+        </div>
+    </div>
+
+
+<div id="tasks-page" class="flex-grow flex-col items-center p-4 text-center hidden">
+    <div class="w-full max-w-md">
+        <h1 class="text-3xl font-bold">To Do Tasks <span class="primary-gradient bg-clip-text text-transparent">©</span></h1>
+        <p class="text-gray-400 mt-2 mb-6">Complete tasks to earn rewards and boost your progress!</p>
+        
+
+        <button class="w-full bg-gray-900 py-3 rounded-xl secondary-gradient-border font-semibold mb-6">
+            Tasking to earn
+        </button>
+
+        <div id="tasks-list" class="space-y-3">
+    
+            <p>Loading tasks...</p>
+        </div>
+    </div>
+</div>
+
+
+<div id="friends-page" class="flex-grow flex-col items-center p-4 text-center hidden">
+    <div class="w-full max-w-md">
+        <h1 class="text-3xl font-bold">Your UniqueSale Family</h1>
+        <p class="text-gray-400 mt-2 mb-6">Invite your friends to get UniqueCoins and 10 health.</p>
+        <button id="copy-invite-link-button" class="w-full bg-gray-900 py-3 rounded-xl secondary-gradient-border font-semibold mb-6">
+            Copy invitation link
+        </button>
+        
+        <div class="bg-gray-900 p-4 rounded-xl flex justify-between items-center secondary-gradient-border mb-4">
+            <span class="font-bold">Invited Friends</span>
+            <span id="invited-friends-summary" class="flex items-center font-bold text-yellow-400">
+                <!-- Summary will be loaded here -->
+            </span>
+        </div>
+
+        <div id="friends-list" class="space-y-3">
+            <!-- Friends list will be loaded here -->
+        </div>
+    </div>
+</div>
+
+
+
+<!-- ================== INVITE PAGE ================== -->
+<div id="invite-page" class="flex-grow flex-col items-center p-4 text-center hidden">
+    <div class="w-full max-w-md">
+        <h1 class="text-3xl font-bold">Invite Friends</h1>
+        <p class="text-gray-400 mt-2 mb-6">Invite your friends and complete tasks to earn.</p>
+        <button id="share-button" class="w-full bg-gray-900 py-3 rounded-xl secondary-gradient-border font-semibold mb-6">
+            Copy invitation link
+        </button>
+
+        <!-- Referral Task List -->
+        <div class="space-y-3 text-left">
+            <div class="bg-gray-900 p-4 rounded-xl flex justify-between items-center secondary-gradient-border">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-gray-800 p-2 rounded-full text-white">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.65 12c-.88-.25-.88-1.37 0-1.61l18.1-6.8c.75-.28 1.4.3 1.15 1.25l-3.22 14.86c-.33 1.43-1.25 1.78-2.12.88l-5.32-3.91-2.51 2.38c-.24.24-.45.46-.8.46z"/></svg>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Invite a friend</p>
+                        <p class="text-sm text-yellow-400 font-medium flex items-center gap-1">
+                            <img src="logo.jpg" class="w-4 h-4" alt="coin">
+                            50,000
+                        </p>
+                    </div>
+                </div>
+                <div class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-700">
+                    <svg class="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+<div id="leaderboard-page" class="flex-grow flex-col items-center p-4 text-center hidden">
+    <div class="w-full max-w-md">
+        <h1 class="text-3xl font-bold">Leaderboard</h1>
+        <p class="text-gray-400 mt-2 mb-6">Hit up the LeaderBoard to see top players and their rankings!</p>
+        
+        <button class="w-full bg-gray-900 py-3 rounded-xl secondary-gradient-border font-semibold mb-6">
+            LeaderBoard Rankings
+        </button>
+
+        <!-- User's Rank Display -->
+        <div id="user-rank-display" class="bg-gray-900 p-4 rounded-xl flex justify-between items-center secondary-gradient-border mb-4">
+
+        </div>
+
+        <!-- Top Players List -->
+        <div id="leaderboard-list" class="space-y-3">
+
+            <p>Loading rankings...</p>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- ================== WALLET CONNECT MODAL (Solana) ================== -->
+<div id="wallet-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+    <div class="bg-gray-800 rounded-xl p-6 text-center w-full max-w-sm">
+        <h2 class="text-2xl font-bold mb-2">Connect Your Wallet</h2>
+        <p class="text-sm text-gray-400 mb-4">Enter your Solana wallet address to secure your earnings.</p>
+        <input id="wallet-input" type="text" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-center text-white mb-4" placeholder="Enter your Solana wallet address">
+        <div class="flex space-x-3">
+            <button id="wallet-cancel-button" class="w-full bg-gray-700 text-white font-bold py-3 rounded-lg">Cancel</button>
+            <button id="wallet-submit-button" class="w-full primary-gradient text-white font-bold py-3 rounded-lg">Connect Wallet</button>
+        </div>
+    </div>
+</div>
+
+<nav class="w-full bg-gray-900 p-2 flex justify-around text-xs text-gray-400 border-t border-gray-700">
+    <!-- Tasks Button -->
+    <button id="tasks-nav-button" class="flex flex-col items-center justify-center w-1/5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        <span>Tasks</span>
+    </button>
+    
+    <!-- Friends Button - UPDATED -->
+    <button id="friends-nav-button" class="flex flex-col items-center justify-center w-1/5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m9 5.197a6 6 0 004.5-1.949M15 21a6 6 0 00-9-5.197"/></svg>
+        <span>Friends</span>
+    </button>
+
+    <!-- Home Button -->
+    <button id="home-nav-button" class="flex flex-col items-center justify-center w-1/5 text-yellow-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span>Home</span>
+    </button>
+
+    <!-- Leaders Button -->
+    <button id="leaders-nav-button" class="flex flex-col items-center justify-center w-1/5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <span>Leaders</span>
+    </button>
+
+    <!-- Invite Button - UPDATED -->
+    <button id="invite-nav-button" class="flex flex-col items-center justify-center w-1/5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.368a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"/></svg>
+        <span>Invite</span>
+    </button>
+</nav>
+
+
+
+    <script>
+
+        const gameItems = [
+            { type: 'fruit', points: 1,    imageUrl: 'logo.jpg',   rarity: 50 }, // Most Common
+            { type: 'fruit', points: 10,   imageUrl: 'fruit1.jpg', rarity: 25 }, // Common
+            { type: 'fruit', points: 50,   imageUrl: 'fruit2.jpg', rarity: 10 }, // Rare
+            { type: 'bomb',  points: -100, imageUrl: 'bomb.jpg',   rarity: 15 }  // Bomb
+        ];
+
+        const gameState = {
+            score: 0, game_sessions: 0, tap_level: 1,
+            gameInterval: null, ballInterval: null, sessionScore: 0,
+            claimable_rewards: 0,
+        };
+
+        // --- 2. DOM REFERENCES ---
+        const dom = {
+            loader: document.getElementById('loader'),
+            errorDisplay: document.getElementById('error-display'),
+            errorMessage: document.getElementById('error-message'),
+            appLobby: document.getElementById('app-lobby'),
+            scoreDisplay: document.getElementById('score-display'),
+            healthDisplay: document.getElementById('health-display'),
+            playButton: document.getElementById('play-button'),
+            gameOverlay: document.getElementById('game-overlay'),
+            gameTimer: document.getElementById('game-timer'),
+            sessionScoreDisplay: document.getElementById('session-score-display'),
+            tappingArea: document.getElementById('tapping-area'),
+            closeGameButton: document.getElementById('close-game-button'),
+            summaryPopup: document.getElementById('summary-popup'),
+            summaryScore: document.getElementById('summary-score'),
+            summaryCloseButton: document.getElementById('summary-close-button'),
+            usernameDisplay: document.getElementById('username-display'),
+            walletConnectBanner: document.getElementById('wallet-connect-banner'),
+            connectWalletButton: document.getElementById('connect-wallet-button'),
+            claimRewardsButton: document.getElementById('claim-rewards-button'),
+            rewardsAmountDisplay: document.getElementById('rewards-amount-display'),
+            walletModal: document.getElementById('wallet-modal'),
+            walletInput: document.getElementById('wallet-input'),
+            walletCancelButton: document.getElementById('wallet-cancel-button'),
+            walletSubmitButton: document.getElementById('wallet-submit-button'),
+            tasksPage: document.getElementById('tasks-page'),
+            tasksList: document.getElementById('tasks-list'),
+
+            homeNavButton: document.getElementById('home-nav-button'),
+            tasksNavButton: document.getElementById('tasks-nav-button'),
+            friendsPage: document.getElementById('friends-page'),
+            friendsList: document.getElementById('friends-list'),
+            invitePage: document.getElementById('invite-page'),
+            referralLinkDisplay: document.getElementById('referral-link-display'),
+            shareButton: document.getElementById('share-button'),
+            // Get the nav buttons
+            friendsNavButton: document.getElementById('friends-nav-button'),
+            inviteNavButton: document.getElementById('invite-nav-button'),
+            leaderboardPage: document.getElementById('leaderboard-page'),
+            leaderboardContent: document.getElementById('leaderboard-content'),
+            leadersNavButton: document.getElementById('leaders-nav-button'),
+            copyInviteLinkButton: document.getElementById('copy-invite-link-button' ),
+            invitedFriendsSummary: document.getElementById('invited-friends-summary'),
+            userRankDisplay: document.getElementById('user-rank-display'),
+            leaderboardList: document.getElementById('leaderboard-list'),
+        };
+
+        function showPage(pageId) {
+            // Hide all main pages
+            dom.appLobby.classList.add('hidden');
+            dom.tasksPage.classList.add('hidden');
+            dom.friendsPage.classList.add('hidden');
+             dom.leaderboardPage.classList.add('hidden');
+             dom.invitePage.classList.add('hidden');
+
+            const pageToShow = document.getElementById(pageId);
+            if (pageToShow) {
+                pageToShow.classList.remove('hidden');
+                pageToShow.classList.add('flex');
+            }
+        }
+
+
+async function loadTasks() {
+    try {
+        const response = await fetch('/tasks', { headers: { 'telegram-data': window.Telegram.WebApp.initData } });
+        if (!response.ok) throw new Error('Failed to load tasks');
+        const tasks = await response.json();
+
+        dom.tasksList.innerHTML = ''; 
+
+        const iconMap = {
+            twitter: '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+            telegram: '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.65 12c-.88-.25-.88-1.37 0-1.61l18.1-6.8c.75-.28 1.4.3 1.15 1.25l-3.22 14.86c-.33 1.43-1.25 1.78-2.12.88l-5.32-3.91-2.51 2.38c-.24.24-.45.46-.8.46z"/></svg>',
+            youtube: '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M21.582 7.334c-.23.822-.822 1.414-1.644 1.644C18.22 9.334 12 9.334 12 9.334s-6.22 0-7.938-.356c-.822-.23-1.414-.822-1.644-1.644C2.062 6.512 2 2 12 2s9.938 4.512 9.582 5.334zM12 14.666c6.22 0 7.938.356 7.938.356.822.23 1.414.822 1.644 1.644.356.822.356 6.334.356 6.334s0 6.22-.356 7.938c-.23.822-.822 1.414-1.644 1.644C18.22 22.666 12 22.666 12 22.666s-6.22 0-7.938-.356c-.822-.23-1.414-.822-1.644-1.644C3.706 21.488 2 15 2 15s0-6.512.356-7.334c.23-.822.822-1.414 1.644-1.644C5.78 5.666 12 5.666 12 5.666zM9.5 14.5v-5l5 2.5-5 2.5z"/></svg>'
+        };
+
+        tasks.forEach(task => {
+            const taskElement = document.createElement('div');
+
+            taskElement.className = 'bg-gray-900 p-4 rounded-xl flex justify-between items-center secondary-gradient-border';
+            
+            const checkmarkIcon = '<svg class="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>';
+
+            taskElement.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <div class="bg-gray-800 p-2 rounded-full">
+                        ${iconMap[task.icon] || ''}
+                    </div>
+                    <div>
+                        <p class="font-semibold text-left">${task.name}</p>
+                        <p class="text-sm text-yellow-400 font-medium text-left flex items-center gap-1">
+                            <img src="logo.jpg" class="w-4 h-4" alt="coin">
+                            +${new Intl.NumberFormat( ).format(task.points)}
+                        </p>
+                    </div>
+                </div>
+                <button 
+                    id="task-btn-${task.id}" 
+                    class="w-10 h-10 flex items-center justify-center rounded-full ${task.completed ? 'bg-gray-700' : 'primary-gradient'}"
+                    ${task.completed ? 'disabled' : ''}
+                    onclick="handleTaskClick(${task.id}, '${task.link}', ${task.completed})"
+                >
+                    ${task.completed ? checkmarkIcon : ''}
+                </button>
+            `;
+            dom.tasksList.appendChild(taskElement);
+        });
+    } catch (error) {
+        console.error("Task load error:", error);
+        dom.tasksList.innerHTML = '<p class="text-red-500">Could not load tasks.</p>';
+    }
+}
+
+async function loadFriends() {
+    dom.friendsList.innerHTML = '<p>Loading friends...</p>';
+    try {
+        const response = await fetch('/friends', { headers: { 'telegram-data': window.Telegram.WebApp.initData } });
+        const friends = await response.json();
+        dom.friendsList.innerHTML = '';
+
+        if (friends.length === 0) {
+            dom.friendsList.innerHTML = '<p class="text-gray-400">No friends have joined using your link yet.</p>';
+        }
+
+        let totalBonus = 0;
+        friends.forEach(friend => {
+            totalBonus += 10000; 
+            const friendEl = document.createElement('div');
+            friendEl.className = 'bg-gray-900 p-4 rounded-xl flex justify-between items-center secondary-gradient-border';
+
+            const initial = (friend.username || 'F').charAt(0).toUpperCase();
+
+            friendEl.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 flex items-center justify-center bg-gray-700 rounded-full font-bold text-lg">
+                        ${initial}
+                    </div>
+                    <div class="text-left">
+                        <p class="font-semibold">${friend.username || 'Friend'}</p>
+                        <p class="text-xs text-gray-400">Score: ${new Intl.NumberFormat().format(friend.score)}</p>
+                    </div>
+                </div>
+                <div class="text-yellow-400 font-medium flex items-center gap-1">
+                    <img src="logo.jpg" class="w-5 h-5" alt="coin">
+                    +10,000
+                </div>
+            `;
+            dom.friendsList.appendChild(friendEl );
+        });
+
+        // Update the summary header
+        dom.invitedFriendsSummary.innerHTML = `
+            <img src="logo.jpg" class="w-6 h-6 mr-2" alt="avatar">
+            ${new Intl.NumberFormat( ).format(totalBonus)}
+        `;
+
+    } catch (error) {
+        dom.friendsList.innerHTML = '<p class="text-red-500">Could not load friends.</p>';
+    }
+}
+async function loadLeaderboard() {
+    dom.userRankDisplay.innerHTML = '';
+    dom.leaderboardList.innerHTML = '<p class="text-center">Loading rankings...</p>';
+    
+    try {
+        const response = await fetch('/leaderboard', { headers: { 'telegram-data': window.Telegram.WebApp.initData } });
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        
+        const data = await response.json();
+
+        // 1. Display the current user's rank
+        dom.userRankDisplay.innerHTML = `
+            <span class="font-bold">Your Ranking</span>
+            <span class="font-bold text-2xl text-yellow-400">#${data.current_user_rank || 'N/A'}</span>
+        `;
+
+        // 2. Display the top users list
+        dom.leaderboardList.innerHTML = '';
+        if (data.top_users.length === 0) {
+            dom.leaderboardList.innerHTML = '<p class="text-gray-400">The leaderboard is empty.</p>';
+            return;
+        }
+
+        data.top_users.forEach(user => {
+            const userElement = document.createElement('div');
+            userElement.className = 'bg-gray-900 p-4 rounded-xl flex justify-between items-center secondary-gradient-border';
+            
+            userElement.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <div class="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full font-bold">
+                        ${user.rank}
+                    </div>
+                    <div class="text-left">
+                        <p class="font-semibold">${user.username || 'Player'}</p>
+                        <!-- You can add a sub-line here if needed, like in the design -->
+                    </div>
+                </div>
+                <div class="text-yellow-400 font-medium flex items-center gap-2">
+                    <img src="logo.jpg" class="w-6 h-6" alt="coin">
+                    <span class="font-bold">${new Intl.NumberFormat( ).format(user.score)}</span>
+                </div>
+            `;
+            dom.leaderboardList.appendChild(userElement);
+        });
+
+    } catch (error) {
+        console.error("Leaderboard load error:", error);
+        dom.leaderboardList.innerHTML = '<p class="text-red-500 text-center">Could not load leaderboard.</p>';
+    }
+}
+
+
+async function handleTaskClick(taskId, link, isCompleted) {
+    if (isCompleted) return;
+
+    window.Telegram.WebApp.openLink(link);
+
+    const button = document.getElementById(`task-btn-${taskId}`);
+    button.disabled = true;
+    button.textContent = 'Verifying...';
+
+    try {
+        const response = await fetch(`/claim_task/${taskId}`, {
+            method: 'POST',
+            headers: { 'telegram-data': window.Telegram.WebApp.initData }
+        });
+        if (!response.ok) throw new Error('Verification failed.');
+
+        const claimedTask = await response.json();
+        
+        // Update button to show "Completed"
+        button.textContent = 'Completed';
+        button.className = 'bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm';
+        
+        // Update user's main score display
+        gameState.score += claimedTask.points;
+        updateLobbyUI();
+
+    } catch (error) {
+        console.error("Task claim error:", error);
+        alert("Could not verify task completion. Please try again.");
+        button.disabled = false;
+        button.textContent = 'Check';
+    }
+}
+
+
+
+function updateLobbyUI() {
+
+    dom.scoreDisplay.querySelector('span').textContent = new Intl.NumberFormat().format(gameState.score);
+    dom.healthDisplay.textContent = gameState.game_sessions;
+    dom.usernameDisplay.textContent = gameState.username || 'guest';
+
+    // Show/hide wallet banner
+    if (gameState.walletAddress) {
+        dom.walletConnectBanner.classList.add('hidden');
+    } else {
+        dom.walletConnectBanner.classList.remove('hidden');
+    }
+
+    // Disable/enable play button
+    const isPlayable = gameState.game_sessions > 0;
+    dom.playButton.disabled = !isPlayable;
+    dom.playButton.classList.toggle('opacity-50', !isPlayable);
+    dom.playButton.classList.toggle('cursor-not-allowed', !isPlayable);
+
+    // Update claimable rewards button
+    const isClaimable = gameState.claimable_rewards > 0;
+    dom.claimRewardsButton.disabled = !isClaimable;
+    dom.claimRewardsButton.classList.toggle('opacity-50', !isClaimable);
+    dom.claimRewardsButton.classList.toggle('cursor-not-allowed', !isClaimable);
+    
+    // Update the text on the claim button based on the design
+    if (isClaimable) {
+        dom.rewardsAmountDisplay.textContent = `${new Intl.NumberFormat().format(gameState.claimable_rewards)} coins`;
+    } else {
+        dom.rewardsAmountDisplay.textContent = 'Ready'; // Or show a timer
+    }
+}
+
+
+
+        function showLobby() {
+            dom.loader.classList.add('hidden');
+            dom.errorDisplay.classList.add('hidden');
+            dom.appLobby.classList.remove('hidden');
+            dom.appLobby.classList.add('flex');
+        }
+        
+        function showError(message) {
+            dom.loader.classList.add('hidden');
+            dom.appLobby.classList.add('hidden');
+            dom.errorMessage.textContent = message;
+            dom.errorDisplay.classList.remove('hidden');
+            dom.errorDisplay.classList.add('flex');
+        }
+
+        // --- 4. GAME LOGIC ---
+        function handleTap(event) {
+            const tappedBall = event.currentTarget;
+            event.stopPropagation();
+            
+            const points = parseInt(tappedBall.dataset.points, 10);
+            const type = tappedBall.dataset.type;
+
+            gameState.sessionScore += points;
+            if (gameState.sessionScore < 0) gameState.sessionScore = 0;
+            dom.sessionScoreDisplay.textContent = gameState.sessionScore;
+
+            const plusIndicator = document.createElement('div');
+            if (type === 'bomb') {
+                plusIndicator.textContent = `${points}`;
+                plusIndicator.className = 'absolute text-red-500 font-bold text-xl pointer-events-none';
+            } else {
+                plusIndicator.textContent = `+${points}`;
+                plusIndicator.className = 'absolute text-yellow-300 font-bold text-lg pointer-events-none';
+            }
+            
+            plusIndicator.style.left = tappedBall.style.left;
+            plusIndicator.style.top = tappedBall.style.top;
+            dom.tappingArea.appendChild(plusIndicator);
+
+            plusIndicator.animate([{ transform: 'translateY(0px)', opacity: 1 }, { transform: 'translateY(-50px)', opacity: 0 }], { duration: 800, easing: 'ease-out' });
+            setTimeout(() => plusIndicator.remove(), 800);
+            tappedBall.remove();
+        }
+
+        function createBall() {
+            if (dom.tappingArea.offsetWidth === 0) return;
+
+            const rand = Math.random() * 100;
+            let cumulativeRarity = 0;
+            let selectedItem = gameItems[0];
+            for (const item of gameItems) {
+                cumulativeRarity += item.rarity;
+                if (rand < cumulativeRarity) {
+                    selectedItem = item;
+                    break;
+                }
+            }
+
+            const ball = document.createElement('div');
+            ball.className = 'falling-ball';
+            ball.style.backgroundImage = `url('${selectedItem.imageUrl}')`;
+            ball.dataset.points = selectedItem.points;
+            ball.dataset.type = selectedItem.type;
+
+            const startX = Math.random() * (dom.tappingArea.offsetWidth - 50);
+            ball.style.left = `${startX}px`;
+            ball.style.top = `-50px`;
+
+            ball.addEventListener('pointerdown', handleTap);
+            dom.tappingArea.appendChild(ball);
+
+            const timeElapsed = 60 - parseInt(dom.gameTimer.textContent, 10);
+            const maxDuration = 5000;
+            const minDuration = 2000;
+            const fallDuration = maxDuration - (maxDuration - minDuration) * (timeElapsed / 60);
+
+            const fallAnimation = ball.animate([{ transform: `translateY(${dom.tappingArea.offsetHeight + 50}px)` }], { duration: fallDuration, easing: 'linear' });
+            fallAnimation.onfinish = () => ball.remove();
+        }
+
+        function startGame() {
+            if (gameState.game_sessions <= 0) return;
+
+            gameState.sessionScore = 0;
+            dom.sessionScoreDisplay.textContent = 0;
+            dom.gameTimer.textContent = 60;
+            dom.gameOverlay.classList.remove('hidden');
+
+            gameState.gameInterval = setInterval(() => {
+                const currentTime = parseInt(dom.gameTimer.textContent, 10);
+                if (currentTime > 0) {
+                    dom.gameTimer.textContent = currentTime - 1;
+                } else {
+                    endGame();
+                }
+            }, 1000);
+            gameState.ballInterval = setInterval(createBall, 400); // Spawn balls slightly faster
+        }
+
+        function endGame() {
+            clearInterval(gameState.gameInterval);
+            clearInterval(gameState.ballInterval);
+            dom.tappingArea.innerHTML = '';
+            dom.gameOverlay.classList.add('hidden');
+            
+            dom.summaryScore.textContent = new Intl.NumberFormat().format(gameState.sessionScore);
+            dom.summaryPopup.classList.remove('hidden');
+            dom.summaryPopup.classList.add('flex');
+        }
+
+        // --- 5. INITIALIZATION & SYNC ---
+        async function initialize() {
+            try {
+                const response = await fetch(`/get_user_data?v=${Date.now()}`, { headers: { 'telegram-data': window.Telegram.WebApp.initData } });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server responded with ${response.status}: ${errorText}`);
+                }
+                const data = await response.json();
+                gameState.score = data.score;
+                gameState.game_sessions = data.game_sessions;
+                gameState.tap_level = data.tap_level;
+                gameState.username = data.username; // NEW
+                gameState.walletAddress = data.walletAddress; // NEW
+                gameState.claimable_rewards = data.claimable_rewards;
+                gameState.referral_code = data.referral_code;
+
+                updateLobbyUI();
+                showLobby();
+            } catch (error) {
+                console.error("Initialization failed:", error);
+                showError(error.message);
+            }
+        }
+
+        // --- 6. EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            dom.playButton.addEventListener('click', startGame);
+            dom.closeGameButton.addEventListener('click', endGame);
+            
+            dom.summaryCloseButton.addEventListener('click', async () => {
+                dom.summaryPopup.classList.add('hidden');
+                
+                if (gameState.sessionScore !== 0) {
+                    // Optimistically update UI right away for better UX
+                    gameState.score += gameState.sessionScore;
+                    if (gameState.score < 0) gameState.score = 0;
+                    updateLobbyUI(); 
+
+                    try {
+                        const response = await fetch('/sync_score', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'telegram-data': window.Telegram.WebApp.initData },
+                            body: JSON.stringify({ taps: gameState.sessionScore })
+                        });
+                        if (!response.ok) throw new Error(`Sync failed with status ${response.status}`);
+                        
+                        // Re-sync with the authoritative data from the server
+                        const data = await response.json();
+                        gameState.score = data.score;
+                        gameState.game_sessions = data.game_sessions;
+                        gameState.tap_level = data.tap_level;
+                        updateLobbyUI();
+                    } catch (error) {
+                        console.error("Sync error:", error);
+                        showError("Could not sync score. Please restart.");
+                    }
+                }
+            });
+                    // --- NEW: Wallet Modal Listeners ---
+            dom.connectWalletButton.addEventListener('click', () => {
+                dom.walletModal.classList.remove('hidden');
+                dom.walletModal.classList.add('flex');
+            });
+
+            dom.walletCancelButton.addEventListener('click', () => {
+                dom.walletModal.classList.add('hidden');
+            });
+
+            dom.walletSubmitButton.addEventListener('click', async () => {
+                const walletAddress = dom.walletInput.value.trim();
+                // Basic validation for Solana address (length)
+                if (walletAddress.length < 32 || walletAddress.length > 44) {
+                    alert('Please enter a valid Solana wallet address.');
+                    return;
+                }
+
+                dom.walletSubmitButton.disabled = true;
+                dom.walletSubmitButton.textContent = 'Connecting...';
+
+                try {
+                    // We need to create this new endpoint on the backend
+                    const response = await fetch('/save_wallet', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'telegram-data': window.Telegram.WebApp.initData },
+                        body: JSON.stringify({ wallet_address: walletAddress })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to save wallet.');
+
+                    const data = await response.json();
+                    gameState.walletAddress = data.walletAddress; // Update local state
+                    updateLobbyUI(); // Re-render UI to hide banner
+
+                    dom.walletModal.classList.add('hidden');
+                } catch (error) {
+                    console.error('Wallet save error:', error);
+                    alert('Could not save wallet. Please try again.');
+                } finally {
+                    dom.walletSubmitButton.disabled = false;
+                    dom.walletSubmitButton.textContent = 'Connect Wallet';
+                }
+            });
+
+             dom.claimRewardsButton.addEventListener('click', async () => {
+                if (gameState.claimable_rewards <= 0) return;
+
+                dom.claimRewardsButton.disabled = true;
+                dom.claimRewardsButton.querySelector('span').textContent = 'Claiming...';
+
+                try {
+                    const response = await fetch('/claim_rewards', {
+                        method: 'POST',
+                        headers: { 'telegram-data': window.Telegram.WebApp.initData }
+                    });
+                    if (!response.ok) throw new Error('Failed to claim rewards.');
+
+                    const data = await response.json();
+                    
+                    // Update the entire game state with the fresh data from the server
+                    gameState.score = data.score;
+                    gameState.claimable_rewards = data.claimable_rewards;
+                    // ... potentially other fields could change, so a full sync is good
+                    
+                    updateLobbyUI(); // Re-render the UI with the new score and 0 claimable rewards
+
+                } catch (error) {
+                    console.error("Claim error:", error);
+                    alert("Could not claim rewards. Please try again.");
+                } finally {
+                    // Restore button text, updateLobbyUI will handle disabled state
+                    dom.claimRewardsButton.querySelector('span').textContent = 'Claim Rewards';
+                }
+            });
+             dom.homeNavButton.addEventListener('click', () => showPage('app-lobby'));
+            dom.tasksNavButton.addEventListener('click', () => {
+                showPage('tasks-page');
+                loadTasks(); // Load tasks when the page is opened
+            });
+            dom.friendsNavButton.addEventListener('click', () => {
+                showPage('friends-page');
+                loadFriends();
+            });
+
+            const copyLink = () => {
+        const botUsername = "uniquesale_bot"; // Make sure this is your bot's username
+        const referralLink = `https://t.me/${botUsername}?start=${gameState.referral_code}`;
+        navigator.clipboard.writeText(referralLink ).then(() => {
+            alert('Referral link copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy link.');
+        });
+    };
+
+    // Replace the old shareButton listener with this
+    dom.shareButton.addEventListener('click', copyLink);
+    dom.copyInviteLinkButton.addEventListener('click', copyLink);
+
+    // Make sure the showPage logic is correct for the invite page
+    dom.inviteNavButton.addEventListener('click', () => {
+        showPage('invite-page');
+        // No data loading needed here, it's a static page
+    });
+            dom.leadersNavButton.addEventListener('click', () => {
+        showPage('leaderboard-page');
+        loadLeaderboard();
+    });
+
+            initialize();
+        });
+    </script>
+</body>
+</html>
