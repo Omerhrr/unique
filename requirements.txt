@@ -6,4 +6,6 @@ psycopg2-binary
 telegram_webapps_authentication
 gunicorn
 Jinja2
+python-multipart
+
 
