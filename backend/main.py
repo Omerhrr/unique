@@ -226,10 +226,14 @@ def get_user_data(validated_data: dict = Depends(get_validated_data), session: S
             game_sessions=MAX_SESSIONS,
             last_session_recharge=datetime.utcnow(),
             tap_level=1,
-            referred_by_id=referrer_id,
-
+            referred_by_id=referrer_id
         )
-        session.add(db_user)
+        # 1. Add the new user to the session FIRST
+    session.add(db_user)
+    # 2. THEN commit the transaction
+    session.commit()
+    # 3. NOW it's safe to refresh the object
+    session.refresh(db_user)
     else:
 
         if (db_user.username != user_data.get('username') or 
@@ -472,5 +476,6 @@ async def read_index():
     return FileResponse(FRONTEND_DIR / "index.html")
 
 app.mount("/", StaticFiles(directory=FRONTEND_DIR), name="static")
+
 
 
