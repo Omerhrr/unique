@@ -313,52 +313,69 @@
         };
 
         // --- 2. DOM REFERENCES ---
+                // --- 2. DOM REFERENCES (CORRECTED AND COMPLETE) ---
         const dom = {
+            // Overlays and Loaders
             loader: document.getElementById('loader'),
             errorDisplay: document.getElementById('error-display'),
             errorMessage: document.getElementById('error-message'),
+            gameOverlay: document.getElementById('game-overlay'),
+            summaryPopup: document.getElementById('summary-popup'),
+            walletModal: document.getElementById('wallet-modal'),
+
+            // Main Pages
             appLobby: document.getElementById('app-lobby'),
+            tasksPage: document.getElementById('tasks-page'),
+            friendsPage: document.getElementById('friends-page'),
+            invitePage: document.getElementById('invite-page'),
+            leaderboardPage: document.getElementById('leaderboard-page'),
+
+            // Lobby Elements
             scoreDisplay: document.getElementById('score-display'),
             healthDisplay: document.getElementById('health-display'),
+            usernameDisplay: document.getElementById('username-display'),
+            walletConnectBanner: document.getElementById('wallet-connect-banner'),
+            connectWalletButton: document.getElementById('connect-wallet-button'),
             playButton: document.getElementById('play-button'),
-            gameOverlay: document.getElementById('game-overlay'),
+            claimRewardsButton: document.getElementById('claim-rewards-button'),
+            rewardsAmountDisplay: document.getElementById('rewards-amount-display'),
+
+            // Game Elements
             gameTimer: document.getElementById('game-timer'),
             sessionScoreDisplay: document.getElementById('session-score-display'),
             tappingArea: document.getElementById('tapping-area'),
             closeGameButton: document.getElementById('close-game-button'),
-            summaryPopup: document.getElementById('summary-popup'),
             summaryScore: document.getElementById('summary-score'),
             summaryCloseButton: document.getElementById('summary-close-button'),
-            usernameDisplay: document.getElementById('username-display'),
-            walletConnectBanner: document.getElementById('wallet-connect-banner'),
-            connectWalletButton: document.getElementById('connect-wallet-button'),
-            claimRewardsButton: document.getElementById('claim-rewards-button'),
-            rewardsAmountDisplay: document.getElementById('rewards-amount-display'),
-            walletModal: document.getElementById('wallet-modal'),
+
+            // Wallet Modal Elements
             walletInput: document.getElementById('wallet-input'),
             walletCancelButton: document.getElementById('wallet-cancel-button'),
             walletSubmitButton: document.getElementById('wallet-submit-button'),
-            tasksPage: document.getElementById('tasks-page'),
+
+            // Tasks Page Elements
             tasksList: document.getElementById('tasks-list'),
 
-            homeNavButton: document.getElementById('home-nav-button'),
-            tasksNavButton: document.getElementById('tasks-nav-button'),
-            friendsPage: document.getElementById('friends-page'),
+            // Friends Page Elements
             friendsList: document.getElementById('friends-list'),
-            invitePage: document.getElementById('invite-page'),
-            referralLinkDisplay: document.getElementById('referral-link-display'),
-            shareButton: document.getElementById('share-button'),
-            // Get the nav buttons
-            friendsNavButton: document.getElementById('friends-nav-button'),
-            inviteNavButton: document.getElementById('invite-nav-button'),
-            leaderboardPage: document.getElementById('leaderboard-page'),
-            leaderboardContent: document.getElementById('leaderboard-content'),
-            leadersNavButton: document.getElementById('leaders-nav-button'),
-            copyInviteLinkButton: document.getElementById('copy-invite-link-button' ),
+            copyInviteLinkButton: document.getElementById('copy-invite-link-button'),
             invitedFriendsSummary: document.getElementById('invited-friends-summary'),
+
+            // Invite Page Elements
+            shareButton: document.getElementById('share-button'),
+
+            // Leaderboard Page Elements
             userRankDisplay: document.getElementById('user-rank-display'),
             leaderboardList: document.getElementById('leaderboard-list'),
+
+            // Navigation Buttons
+            homeNavButton: document.getElementById('home-nav-button'),
+            tasksNavButton: document.getElementById('tasks-nav-button'),
+            friendsNavButton: document.getElementById('friends-nav-button'),
+            leadersNavButton: document.getElementById('leaders-nav-button'),
+            inviteNavButton: document.getElementById('invite-nav-button'),
         };
+
 
         function showPage(pageId) {
             // Hide all main pages
@@ -882,3 +899,4 @@ function updateLobbyUI() {
     </script>
 </body>
 </html>
+
